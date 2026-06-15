@@ -73,6 +73,7 @@
             top: 0; left: 0;
             width: 100vw; height: 100vh;
             pointer-events: none;
+            z-index: 10;
         }
         .idiot-box {
             position: absolute;
@@ -97,30 +98,31 @@
             100% { top: calc(100vh - 110px); }
         }
 
-        /* QRコード・はずれ用 共通ポップアップ設定 */
+        /* 共通ポップアップ設定（QR・はずれ共通） */
         .custom-popup {
             position: fixed;
             top: 0; left: 0;
             width: 100vw; height: 100vh;
-            background-color: rgba(0,0,0,0.7);
+            background-color: rgba(0,0,0,0.85); /* 背景をより暗く */
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 20000;
+            z-index: 99999; /* 確実に一番手前に表示 */
         }
         .popup-box {
             background: white;
-            padding: 30px 40px;
-            border-radius: 8px;
+            padding: 40px 30px;
+            border-radius: 10px;
             text-align: center;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
             max-width: 90%;
+            width: 400px;
         }
         .popup-box p {
             font-size: 20px;
             font-weight: bold;
-            margin-bottom: 25px;
-            color: #333;
+            margin-bottom: 30px;
+            color: #000;
             line-height: 1.5;
         }
         .popup-buttons {
@@ -132,10 +134,15 @@
             background: #1a73e8;
             color: white;
             border: none;
-            padding: 10px 30px;
+            padding: 12px 40px;
             font-size: 18px;
+            font-weight: bold;
             border-radius: 5px;
             cursor: pointer;
+            transition: 0.2s;
+        }
+        .popup-buttons button:hover {
+            background: #1557b0;
         }
 
         /* Scene 3: CAPTCHA */
@@ -144,7 +151,9 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background-color: rgba(0,0,0,0.8);
+            background-color: rgba(0,0,0,0.9);
+            z-index: 20;
+            position: relative;
         }
         .captcha-modal {
             background: #fff;
@@ -207,4 +216,243 @@
             animation: scrollUp 25s linear forwards;
         }
         .credits h2 { font-size: 24px; margin-top: 50px; color: #888; }
-        .credits p { font-size: 32px; margin: 10px 0; font-
+        .credits p { font-size: 32px; margin: 10px 0; font-weight: bold; }
+        .credits .profile-section { margin-top: 100px; border-top: 1px solid #333; padding-top: 50px; }
+        .credits .profile-item { font-size: 20px; margin: 15px 0; font-weight: normal; }
+        .credits .message { margin-top: 40px; font-size: 18px; line-height: 1.6; }
+        .credits .special-thanks { margin-top: 40px; font-size: 14px; color: #aaa; }
+        .credits .the-end { margin-top: 60px; font-size: 28px; font-weight: bold; letter-spacing: 3px; }
+        
+        @keyframes scrollUp {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-300%); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 音声ファイル -->
+    <audio id="audio-intro" src="閑静な住宅街1.mp3" loop></audio>
+    <audio id="audio-idiot" src="宇宙基地.mp3" loop></audio>
+    <audio id="audio-endroll" src="maou_short_14_shining_star.mp3"></audio>
+
+    <!-- Scene 1: デカデカ自己紹介 -->
+    <div id="scene-intro">
+        <h1>自己紹介</h1>
+        <button id="start-btn">ここをクリック</button>
+        
+        <div class="warning-text">
+            <p class="big-red">【重要】</p>
+            <p class="big-red">画面を明るくしてご覧ください！</p>
+            <p class="small-gray">※音量にもご注意ください。<br>画面を一度タップすると環境音が流れます。</p>
+        </div>
+    </div>
+
+    <!-- Scene 2: You are an idiot パロディ -->
+    <div id="idiot-container" class="hidden">
+        <div class="idiot-box">You are an idiot ☺</div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- 新規追加：QR質問ポップアップ（IdiotとCAPTCHAの間） -->
+    <!-- ============================================== -->
+    <div id="qr-question-alert" class="custom-popup hidden">
+        <div class="popup-box">
+            <p>知らないQRコードは読み取っちゃ駄目なの知らなかった？？？？？</p>
+            <div class="popup-buttons">
+                <button id="qr-yes-btn">Yes</button>
+                <button id="qr-no-btn">No</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR返答ポップアップ -->
+    <div id="qr-response-alert" class="custom-popup hidden">
+        <div class="popup-box">
+            <p id="qr-response-msg"></p>
+            <div class="popup-buttons">
+                <button id="qr-ok-btn">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scene 3: CAPTCHA -->
+    <div id="scene-captcha" class="hidden">
+        <div class="captcha-modal">
+            <div class="captcha-header">
+                すべての <strong><span id="target-word">信号機</span></strong> の画像を選択してください。<br>
+                <small>（<span id="solve-count">0</span> / 5 問クリア）</small>
+            </div>
+            <div class="captcha-grid" id="grid">
+                <!-- 9つのマスをJSで生成 -->
+            </div>
+            <button id="verify-btn">確認</button>
+            <div style="clear:both;"></div>
+        </div>
+    </div>
+
+    <!-- CAPTCHAはずれ用ポップアップ -->
+    <div id="custom-alert" class="custom-popup hidden">
+        <div class="popup-box">
+            <p id="alert-msg">はずれw</p>
+            <div class="popup-buttons">
+                <button id="alert-ok-btn">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scene 4: エンドロール -->
+    <div id="scene-endroll" class="hidden">
+        <div class="credits">
+            <h2>Directed by</h2>
+            <p>西原騎宇</p>
+
+            <h2>Produced by</h2>
+            <p>西原騎宇</p>
+
+            <h2>Special Thanks</h2>
+            <p>The Internet</p>
+
+            <div class="profile-section">
+                <h2>【 本当の自己紹介 】</h2>
+                <p>西原騎宇</p>
+                <div class="profile-item">法学部法学科</div>
+                <div class="profile-item"><strong>出身：</strong> 高槻</div>
+                <div class="profile-item"><strong>好きなもの：</strong> ヨルシカ、ソシャゲなど</div>
+                <div class="profile-item"><strong>悩み：</strong> 食事に安易にラーメンを選ぶ風潮</div>
+                
+                <div class="message">
+                    僕の勝手な一人遊びに付き合っていただきありがとうございました。<br>
+                    ゆるりとよろしくお願いします。
+                </div>
+                
+                <div class="special-thanks">
+                    special thanks : Gemini Pro
+                </div>
+                
+                <div class="the-end">
+                    自己紹介以上
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const audioIntro = document.getElementById('audio-intro');
+        const audioIdiot = document.getElementById('audio-idiot');
+        const audioEndroll = document.getElementById('audio-endroll');
+        
+        audioIntro.volume = 0.5;
+        audioIdiot.volume = 0.5;
+        audioEndroll.volume = 0.4;
+
+        // 画面タップで環境音再生
+        let isAudioUnlocked = false;
+        document.body.addEventListener('click', () => {
+            if (!isAudioUnlocked) {
+                if (!sceneIntro.classList.contains('hidden')) {
+                    audioIntro.play().catch(() => {});
+                }
+                isAudioUnlocked = true;
+            }
+        });
+
+        const captchaWords = ["信号機", "横断歩道", "消火栓", "自転車", "バス"];
+        let captchaProgress = 0;
+        const failMessages = ["はずれw", "はずれww", "はずれwww", "はずれwwww", "はずれwwwwww"];
+
+        const sceneIntro = document.getElementById('scene-intro');
+        const idiotContainer = document.getElementById('idiot-container');
+        const qrQuestionAlert = document.getElementById('qr-question-alert');
+        const qrResponseAlert = document.getElementById('qr-response-alert');
+        const qrResponseMsg = document.getElementById('qr-response-msg');
+        const sceneCaptcha = document.getElementById('scene-captcha');
+        const sceneEndroll = document.getElementById('scene-endroll');
+        const customAlert = document.getElementById('custom-alert');
+        const body = document.body;
+
+        // ① スタートボタン
+        document.getElementById('start-btn').addEventListener('click', () => {
+            sceneIntro.classList.add('hidden');
+            
+            audioIntro.pause();
+            audioIdiot.play().catch(()=>{});
+            
+            body.classList.add('flash-bg');
+            idiotContainer.classList.remove('hidden');
+
+            // 4秒後にフラッシュを止めて、QRの質問を出す
+            setTimeout(() => {
+                body.classList.remove('flash-bg');
+                idiotContainer.classList.add('hidden');
+                
+                // QRポップアップを最前面に表示
+                qrQuestionAlert.classList.remove('hidden');
+            }, 4000);
+        });
+
+        // ② QRの質問：Yes/Noボタン
+        document.getElementById('qr-yes-btn').addEventListener('click', () => {
+            qrQuestionAlert.classList.add('hidden');
+            qrResponseMsg.innerText = "じゃあなんで押したのwwwwww";
+            qrResponseAlert.classList.remove('hidden');
+        });
+
+        document.getElementById('qr-no-btn').addEventListener('click', () => {
+            qrQuestionAlert.classList.add('hidden');
+            qrResponseMsg.innerText = "学習しな笑";
+            qrResponseAlert.classList.remove('hidden');
+        });
+
+        // ③ QRの返答のOKボタン（画像認証へ進む）
+        document.getElementById('qr-ok-btn').addEventListener('click', () => {
+            qrResponseAlert.classList.add('hidden');
+            sceneCaptcha.classList.remove('hidden');
+            initCaptcha();
+        });
+
+        // マス生成
+        const grid = document.getElementById('grid');
+        for(let i=0; i<9; i++){
+            let box = document.createElement('div');
+            box.className = 'captcha-box';
+            box.addEventListener('click', function(){
+                this.classList.toggle('selected');
+            });
+            grid.appendChild(box);
+        }
+
+        // ④ CAPTCHAの確認ボタン（はずれポップアップ）
+        document.getElementById('verify-btn').addEventListener('click', () => {
+            document.getElementById('alert-msg').innerText = failMessages[captchaProgress];
+            customAlert.classList.remove('hidden');
+        });
+
+        // ⑤ CAPTCHAはずれのOKボタン（次へ進む or エンドロール）
+        document.getElementById('alert-ok-btn').addEventListener('click', () => {
+            customAlert.classList.add('hidden');
+            captchaProgress++;
+
+            if(captchaProgress >= 5) {
+                sceneCaptcha.classList.add('hidden');
+                sceneEndroll.classList.remove('hidden');
+                
+                // エンドロールに入るときに宇宙基地の音を止める
+                audioIdiot.pause();
+                
+                audioEndroll.currentTime = 0;
+                audioEndroll.play().catch(()=>{});
+            } else {
+                initCaptcha();
+            }
+        });
+
+        function initCaptcha() {
+            document.getElementById('target-word').innerText = captchaWords[captchaProgress];
+            document.getElementById('solve-count').innerText = captchaProgress;
+            const boxes = document.querySelectorAll('.captcha-box');
+            boxes.forEach(box => box.classList.remove('selected'));
+        }
+    </script>
+</body>
+</html>
