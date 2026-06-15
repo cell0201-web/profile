@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>自己紹介</title>
+    <style>
+        /* 共通設定 */
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #ffffff;
+            color: #000;
+        }
+        .hidden { display: none !important; }
+
+        /* Scene 1: デカデカ自己紹介 */
+        #scene-intro {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        h1 {
+            font-size: 15vw;
+            margin: 0;
+            letter-spacing: 5px;
+        }
+        #start-btn {
+            margin-top: 50px;
+            font-size: 24px;
+            padding: 15px 40px;
+            cursor: pointer;
+            border: 2px solid #000;
+            background: #fff;
+            transition: 0.2s;
+        }
+        #start-btn:hover {
+            background: #000;
+            color: #fff;
+        }
+
+        /* Scene 2: You are an idiot パロディ */
+        .flash-bg {
+            animation: flash 0.1s infinite;
+        }
+        @keyframes flash {
+            0% { background-color: white; color: black; }
+            50% { background-color: black; color: white; }
+            100% { background-color: white; color: black; }
+        }
+        #idiot-container {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            pointer-events: none;
+        }
+        .idiot-box {
+            position: absolute;
+            width: 250px;
+            height: 100px;
+            background: #fff;
+            color: #000;
+            border: 5px solid #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            animation: bounceX 2.5s infinite alternate linear, bounceY 3.2s infinite alternate linear;
+        }
+        @keyframes bounceX {
+            0% { left: 0; }
+            100% { left: calc(100vw - 260px); }
+        }
+        @keyframes bounceY {
+            0% { top: 0; }
+            100% { top: calc(100vh - 110px); }
+        }
+
+        /* Scene 3: CAPTCHA */
+        #scene-captcha {
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0,0,0,0.8);
+        }
+        .captcha-modal {
+            background: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            width: 350px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        .captcha-header {
+            background: #1a73e8;
+            color: white;
+            padding: 15px;
+            font-size: 18px;
+            text-align: left;
+            margin-bottom: 15px;
+        }
+        .captcha-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+        .captcha-box {
+            width: 100%;
+            aspect-ratio: 1;
+            background: #e0e0e0;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .captcha-box.selected {
+            background: #1a73e8;
+            transform: scale(0.9);
+        }
+        #verify-btn {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            float: right;
+            border-radius: 3px;
+        }
+
+        /* Scene 4: エンドロール */
+        #scene-endroll {
+            height: 100vh;
+            background: #000;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            position: relative;
+        }
+        .credits {
+            position: absolute;
+            bottom: -100%;
+            text-align: center;
+            width: 100%;
+            animation: scrollUp 20s linear forwards;
+        }
+        .credits h2 { font-size: 24px; margin-top: 50px; color: #888; }
+        .credits p { font-size: 32px; margin: 10px 0; font-weight: bold; }
+        .credits .profile-section { margin-top: 100px; border-top: 1px solid #333; padding-top: 50px; }
+        .credits .profile-item { font-size: 20px; margin: 15px 0; font-weight: normal; }
+        
+        @keyframes scrollUp {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-300%); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Scene 1: デカデカ自己紹介 -->
+    <div id="scene-intro">
+        <h1>自己紹介</h1>
+        <button id="start-btn">ここをクリック</button>
+    </div>
+
+    <!-- Scene 2: You are an idiot パロディ -->
+    <div id="idiot-container" class="hidden">
+        <div class="idiot-box">You are an idiot ☺</div>
+    </div>
+
+    <!-- Scene 3: CAPTCHA -->
+    <div id="scene-captcha" class="hidden">
+        <div class="captcha-modal">
+            <div class="captcha-header">
+                すべての <strong><span id="target-word">信号機</span></strong> の画像を選択してください。<br>
+                <small>（<span id="solve-count">0</span> / 5 問クリア）</small>
+            </div>
+            <div class="captcha-grid" id="grid">
+                <!-- 9つのマスをJSで生成 -->
+            </div>
+            <button id="verify-btn">確認</button>
+            <div style="clear:both;"></div>
+        </div>
+    </div>
+
+    <!-- Scene 4: エンドロール -->
+    <div id="scene-endroll" class="hidden">
+        <div class="credits">
+            <h2>Directed by</h2>
+            <p>Nishihara Kiu</p>
+
+            <h2>Produced by</h2>
+            <p>Nishihara Kiu</p>
+
+            <h2>Special Thanks</h2>
+            <p>The Internet</p>
+
+            <div class="profile-section">
+                <h2>【 本当の自己紹介 】</h2>
+                <p>西原 希宇 (Nishihara Kiu)</p>
+                <div class="profile-item">同志社大学 / 塾講師</div>
+                <div class="profile-item"><strong>趣味：</strong> アコギ (Midwest Emo) / ゲーム (エルデンリング等)</div>
+                <div class="profile-item"><strong>関心：</strong> 中国仏教史 / イタリア帝国主義 / 英語の語法</div>
+                <div class="profile-item" style="margin-top: 50px;">最後まで付き合ってくれてありがとうございます！<br>これからよろしくお願いします。</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CAPTCHA用のお題リスト
+        const captchaWords = ["信号機", "横断歩道", "消火栓", "自転車", "バス"];
+        let captchaProgress = 0;
+
+        const sceneIntro = document.getElementById('scene-intro');
+        const idiotContainer = document.getElementById('idiot-container');
+        const sceneCaptcha = document.getElementById('scene-captcha');
+        const sceneEndroll = document.getElementById('scene-endroll');
+        const body = document.body;
+
+        // Scene 1 -> Scene 2 (Idiot) -> Scene 3 (CAPTCHA)
+        document.getElementById('start-btn').addEventListener('click', () => {
+            // Introを隠す
+            sceneIntro.classList.add('hidden');
+            
+            // 背景点滅とIdiotボックス表示
+            body.classList.add('flash-bg');
+            idiotContainer.classList.remove('hidden');
+
+            // 4秒間パロディを見せつけた後、CAPTCHAを強制表示
+            setTimeout(() => {
+                body.classList.remove('flash-bg');
+                idiotContainer.classList.add('hidden');
+                sceneCaptcha.classList.remove('hidden');
+                initCaptcha();
+            }, 4000);
+        });
+
+        // CAPTCHAのマスを生成
+        const grid = document.getElementById('grid');
+        for(let i=0; i<9; i++){
+            let box = document.createElement('div');
+            box.className = 'captcha-box';
+            box.addEventListener('click', function(){
+                this.classList.toggle('selected');
+            });
+            grid.appendChild(box);
+        }
+
+        // CAPTCHAの確認ボタン処理
+        document.getElementById('verify-btn').addEventListener('click', () => {
+            captchaProgress++;
+            if(captchaProgress >= 5) {
+                // 5問クリアでエンドロールへ
+                sceneCaptcha.classList.add('hidden');
+                sceneEndroll.classList.remove('hidden');
+            } else {
+                // 次の問題へ
+                initCaptcha();
+            }
+        });
+
+        // CAPTCHAを初期化・更新する関数
+        function initCaptcha() {
+            // お題の更新
+            document.getElementById('target-word').innerText = captchaWords[captchaProgress];
+            document.getElementById('solve-count').innerText = captchaProgress;
+            // 選択状態のリセット
+            const boxes = document.querySelectorAll('.captcha-box');
+            boxes.forEach(box => box.classList.remove('selected'));
+        }
+    </script>
+</body>
+</html>
