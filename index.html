@@ -146,12 +146,15 @@
             bottom: -100%;
             text-align: center;
             width: 100%;
-            animation: scrollUp 20s linear forwards;
+            animation: scrollUp 25s linear forwards; /* 曲に合わせて少しゆっくりに */
         }
         .credits h2 { font-size: 24px; margin-top: 50px; color: #888; }
         .credits p { font-size: 32px; margin: 10px 0; font-weight: bold; }
         .credits .profile-section { margin-top: 100px; border-top: 1px solid #333; padding-top: 50px; }
         .credits .profile-item { font-size: 20px; margin: 15px 0; font-weight: normal; }
+        .credits .message { margin-top: 40px; font-size: 18px; line-height: 1.6; }
+        .credits .special-thanks { margin-top: 40px; font-size: 14px; color: #aaa; }
+        .credits .the-end { margin-top: 60px; font-size: 28px; font-weight: bold; letter-spacing: 3px; }
         
         @keyframes scrollUp {
             0% { transform: translateY(0); }
@@ -161,10 +164,17 @@
 </head>
 <body>
 
+    <!-- 音声ファイルの読み込み -->
+    <audio id="audio-intro" src="intro.mp3" loop></audio>
+    <audio id="audio-idiot" src="idiot.mp3" loop></audio>
+    <audio id="audio-endroll" src="endroll.mp3"></audio>
+
     <!-- Scene 1: デカデカ自己紹介 -->
     <div id="scene-intro">
         <h1>自己紹介</h1>
         <button id="start-btn">ここをクリック</button>
+        <!-- 注意書き：ブラウザの仕様対策 -->
+        <p style="font-size: 12px; color: #666; margin-top: 10px;">※音量にご注意ください。画面を一度タップすると環境音が流れます。</p>
     </div>
 
     <!-- Scene 2: You are an idiot パロディ -->
@@ -191,26 +201,58 @@
     <div id="scene-endroll" class="hidden">
         <div class="credits">
             <h2>Directed by</h2>
-            <p>Nishihara Kiu</p>
+            <p>西原騎宇</p>
 
             <h2>Produced by</h2>
-            <p>Nishihara Kiu</p>
+            <p>西原騎宇</p>
 
             <h2>Special Thanks</h2>
             <p>The Internet</p>
 
             <div class="profile-section">
                 <h2>【 本当の自己紹介 】</h2>
-                <p>西原 希宇 (Nishihara Kiu)</p>
-                <div class="profile-item">同志社大学 / 塾講師</div>
-                <div class="profile-item"><strong>趣味：</strong> アコギ (Midwest Emo) / ゲーム (エルデンリング等)</div>
-                <div class="profile-item"><strong>関心：</strong> 中国仏教史 / イタリア帝国主義 / 英語の語法</div>
-                <div class="profile-item" style="margin-top: 50px;">最後まで付き合ってくれてありがとうございます！<br>これからよろしくお願いします。</div>
+                <p>西原騎宇</p>
+                <div class="profile-item">法学部法学科</div>
+                <div class="profile-item"><strong>出身：</strong> 高槻</div>
+                <div class="profile-item"><strong>好きなもの：</strong> ヨルシカ、ソシャゲなど</div>
+                <div class="profile-item"><strong>悩み：</strong> 食事に安易にラーメンを選ぶ風潮</div>
+                
+                <div class="message">
+                    僕の勝手な一人遊びに付き合っていただきありがとうございました。<br>
+                    ゆるりとよろしくお願いします。
+                </div>
+                
+                <div class="special-thanks">
+                    special thanks : Gemini Pro
+                </div>
+                
+                <div class="the-end">
+                    自己紹介以上
+                </div>
             </div>
         </div>
     </div>
 
     <script>
+        const audioIntro = document.getElementById('audio-intro');
+        const audioIdiot = document.getElementById('audio-idiot');
+        const audioEndroll = document.getElementById('audio-endroll');
+        
+        // 音量調整（必要に応じて数値を0.0〜1.0で変更してください）
+        audioIntro.volume = 0.5;
+        audioIdiot.volume = 0.5;
+        audioEndroll.volume = 0.4;
+
+        // ブラウザの仕様（Autoplay制限）により、ユーザーが画面に触れるまで音が出せません。
+        // 画面のどこかをタップ/クリックした瞬間に最初の環境音を再生します。
+        let isIntroPlaying = false;
+        document.body.addEventListener('click', () => {
+            if (!isIntroPlaying && !sceneIntro.classList.contains('hidden')) {
+                audioIntro.play().catch(() => {});
+                isIntroPlaying = true;
+            }
+        }, { once: true });
+
         // CAPTCHA用のお題リスト
         const captchaWords = ["信号機", "横断歩道", "消火栓", "自転車", "バス"];
         let captchaProgress = 0;
@@ -226,6 +268,10 @@
             // Introを隠す
             sceneIntro.classList.add('hidden');
             
+            // 音声の切り替え（住宅街ストップ、宇宙基地スタート）
+            audioIntro.pause();
+            audioIdiot.play();
+            
             // 背景点滅とIdiotボックス表示
             body.classList.add('flash-bg');
             idiotContainer.classList.remove('hidden');
@@ -235,6 +281,10 @@
                 body.classList.remove('flash-bg');
                 idiotContainer.classList.add('hidden');
                 sceneCaptcha.classList.remove('hidden');
+                
+                // CAPTCHA中は宇宙基地の音を止める（静寂でイライラ感を演出）
+                audioIdiot.pause();
+                
                 initCaptcha();
             }, 4000);
         });
@@ -257,6 +307,10 @@
                 // 5問クリアでエンドロールへ
                 sceneCaptcha.classList.add('hidden');
                 sceneEndroll.classList.remove('hidden');
+                
+                // 魔王魂の曲をスタート
+                audioEndroll.currentTime = 0;
+                audioEndroll.play();
             } else {
                 // 次の問題へ
                 initCaptcha();
@@ -265,10 +319,8 @@
 
         // CAPTCHAを初期化・更新する関数
         function initCaptcha() {
-            // お題の更新
             document.getElementById('target-word').innerText = captchaWords[captchaProgress];
             document.getElementById('solve-count').innerText = captchaProgress;
-            // 選択状態のリセット
             const boxes = document.querySelectorAll('.captcha-box');
             boxes.forEach(box => box.classList.remove('selected'));
         }
