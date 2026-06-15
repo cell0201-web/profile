@@ -258,7 +258,7 @@
     <!-- ============================================== -->
     <div id="qr-question-alert" class="custom-popup hidden">
         <div class="popup-box">
-            <p>知らないQRコードは読み取っちゃ駄目なの知らなかった？？？？？</p>
+            <p>知らないQRコードは読み取っちゃ駄目ですよ？？？？？</p>
             <div class="popup-buttons">
                 <button id="qr-yes-btn">Yes</button>
                 <button id="qr-no-btn">No</button>
@@ -397,7 +397,7 @@
 
         document.getElementById('qr-no-btn').addEventListener('click', () => {
             qrQuestionAlert.classList.add('hidden');
-            qrResponseMsg.innerText = "学習しな笑";
+            qrResponseMsg.innerText = "学習し申し上げてください。";
             qrResponseAlert.classList.remove('hidden');
         });
 
