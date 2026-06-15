@@ -29,7 +29,7 @@
             letter-spacing: 5px;
         }
         #start-btn {
-            margin-top: 50px;
+            margin-top: 40px;
             font-size: 24px;
             padding: 15px 40px;
             cursor: pointer;
@@ -40,6 +40,24 @@
         #start-btn:hover {
             background: #000;
             color: #fff;
+        }
+        /* 注意書きのスタイル */
+        .warning-text {
+            margin-top: 40px;
+            text-align: center;
+        }
+        .warning-text p {
+            margin: 5px 0;
+        }
+        .warning-text .big-red {
+            font-size: 1.6rem;
+            font-weight: bold;
+            color: #e60000;
+        }
+        .warning-text .small-gray {
+            font-size: 14px;
+            color: #666;
+            margin-top: 15px;
         }
 
         /* Scene 2: You are an idiot パロディ */
@@ -130,6 +148,40 @@
             cursor: pointer;
             float: right;
             border-radius: 3px;
+        }
+
+        /* はずれポップアップ（カスタムアラート） */
+        #custom-alert {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background-color: rgba(0,0,0,0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+        .alert-box {
+            background: white;
+            padding: 30px 50px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+        }
+        .alert-box p {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 25px;
+            color: #333;
+        }
+        .alert-box button {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 10px 30px;
+            font-size: 18px;
+            border-radius: 5px;
+            cursor: pointer;
         }
 
         /* Scene 4: エンドロール */
@@ -164,7 +216,7 @@
 </head>
 <body>
 
-    <!-- 音声ファイルの読み込み（ファイル名変更済み） -->
+    <!-- 音声ファイルの読み込み -->
     <audio id="audio-intro" src="閑静な住宅街1.mp3" loop></audio>
     <audio id="audio-idiot" src="宇宙基地.mp3" loop></audio>
     <audio id="audio-endroll" src="maou_short_14_shining_star.mp3"></audio>
@@ -173,7 +225,12 @@
     <div id="scene-intro">
         <h1>自己紹介</h1>
         <button id="start-btn">ここをクリック</button>
-        <p style="font-size: 12px; color: #666; margin-top: 10px;">※音量にご注意ください。画面を一度タップすると環境音が流れます。</p>
+        
+        <div class="warning-text">
+            <p class="big-red">【重要】</p>
+            <p class="big-red">画面を明るくしてご覧ください！</p>
+            <p class="small-gray">※音量にもご注意ください。<br>画面を一度タップすると環境音が流れます。</p>
+        </div>
     </div>
 
     <!-- Scene 2: You are an idiot パロディ -->
@@ -193,6 +250,14 @@
             </div>
             <button id="verify-btn">確認</button>
             <div style="clear:both;"></div>
+        </div>
+    </div>
+
+    <!-- カスタムはずれポップアップ -->
+    <div id="custom-alert" class="hidden">
+        <div class="alert-box">
+            <p id="alert-msg">はずれw</p>
+            <button id="alert-ok-btn">OK</button>
         </div>
     </div>
 
@@ -241,18 +306,21 @@
         audioIdiot.volume = 0.5;
         audioEndroll.volume = 0.4;
 
-        let isIntroPlaying = false;
+        // 画面タップで環境音再生
+        let isAudioUnlocked = false;
         document.body.addEventListener('click', () => {
-            if (!isIntroPlaying && !sceneIntro.classList.contains('hidden')) {
-                audioIntro.play().catch(() => {});
-                isIntroPlaying = true;
+            if (!isAudioUnlocked) {
+                if (!sceneIntro.classList.contains('hidden')) {
+                    audioIntro.play().catch(() => {});
+                }
+                isAudioUnlocked = true;
             }
-        }, { once: true });
+        });
 
         const captchaWords = ["信号機", "横断歩道", "消火栓", "自転車", "バス"];
         let captchaProgress = 0;
 
-        // 「はずれ」のメッセージリスト
+        // 段階的にウザくなる「はずれ」メッセージ
         const failMessages = [
             "はずれw",
             "はずれww",
@@ -265,13 +333,15 @@
         const idiotContainer = document.getElementById('idiot-container');
         const sceneCaptcha = document.getElementById('scene-captcha');
         const sceneEndroll = document.getElementById('scene-endroll');
+        const customAlert = document.getElementById('custom-alert');
         const body = document.body;
 
+        // スタートボタン
         document.getElementById('start-btn').addEventListener('click', () => {
             sceneIntro.classList.add('hidden');
             
             audioIntro.pause();
-            audioIdiot.play();
+            audioIdiot.play().catch(()=>{});
             
             body.classList.add('flash-bg');
             idiotContainer.classList.remove('hidden');
@@ -282,11 +352,11 @@
                 sceneCaptcha.classList.remove('hidden');
                 
                 audioIdiot.pause();
-                
                 initCaptcha();
             }, 4000);
         });
 
+        // マス生成
         const grid = document.getElementById('grid');
         for(let i=0; i<9; i++){
             let box = document.createElement('div');
@@ -297,314 +367,29 @@
             grid.appendChild(box);
         }
 
+        // 「確認」ボタンを押したとき（ポップアップを表示）
         document.getElementById('verify-btn').addEventListener('click', () => {
-            // 確認ボタンを押したときにアラートを表示
-            alert(failMessages[captchaProgress]);
+            document.getElementById('alert-msg').innerText = failMessages[captchaProgress];
+            customAlert.classList.remove('hidden');
+        });
 
+        // ポップアップの「OK」ボタンを押したとき（次へ進む or エンドロール）
+        document.getElementById('alert-ok-btn').addEventListener('click', () => {
+            customAlert.classList.add('hidden');
             captchaProgress++;
+
             if(captchaProgress >= 5) {
                 sceneCaptcha.classList.add('hidden');
                 sceneEndroll.classList.remove('hidden');
                 
+                // ここで再生するとブラウザのブロックに引っかかりません
                 audioEndroll.currentTime = 0;
-                audioEndroll.play();
+                audioEndroll.play().catch(()=>{});
             } else {
                 initCaptcha();
             }
         });
 
-        function initCaptcha() {
-            document.getElementById('target-word').innerText = captchaWords[captchaProgress];
-            document.getElementById('solve-count').innerText = captchaProgress;
-            const boxes = document.querySelectorAll('.captcha-box');
-            boxes.forEach(box => box.classList.remove('selected'));
-        }
-    </script>
-</body>
-</html>            background: #fff;
-            transition: 0.2s;
-        }
-        #start-btn:hover {
-            background: #000;
-            color: #fff;
-        }
-
-        /* Scene 2: You are an idiot パロディ */
-        .flash-bg {
-            animation: flash 0.1s infinite;
-        }
-        @keyframes flash {
-            0% { background-color: white; color: black; }
-            50% { background-color: black; color: white; }
-            100% { background-color: white; color: black; }
-        }
-        #idiot-container {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            pointer-events: none;
-        }
-        .idiot-box {
-            position: absolute;
-            width: 250px;
-            height: 100px;
-            background: #fff;
-            color: #000;
-            border: 5px solid #000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 24px;
-            font-weight: bold;
-            animation: bounceX 2.5s infinite alternate linear, bounceY 3.2s infinite alternate linear;
-        }
-        @keyframes bounceX {
-            0% { left: 0; }
-            100% { left: calc(100vw - 260px); }
-        }
-        @keyframes bounceY {
-            0% { top: 0; }
-            100% { top: calc(100vh - 110px); }
-        }
-
-        /* Scene 3: CAPTCHA */
-        #scene-captcha {
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: rgba(0,0,0,0.8);
-        }
-        .captcha-modal {
-            background: #fff;
-            padding: 20px;
-            border-radius: 5px;
-            width: 350px;
-            text-align: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        }
-        .captcha-header {
-            background: #1a73e8;
-            color: white;
-            padding: 15px;
-            font-size: 18px;
-            text-align: left;
-            margin-bottom: 15px;
-        }
-        .captcha-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 5px;
-            margin-bottom: 15px;
-        }
-        .captcha-box {
-            width: 100%;
-            aspect-ratio: 1;
-            background: #e0e0e0;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .captcha-box.selected {
-            background: #1a73e8;
-            transform: scale(0.9);
-        }
-        #verify-btn {
-            background: #1a73e8;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            float: right;
-            border-radius: 3px;
-        }
-
-        /* Scene 4: エンドロール */
-        #scene-endroll {
-            height: 100vh;
-            background: #000;
-            color: #fff;
-            display: flex;
-            justify-content: center;
-            position: relative;
-        }
-        .credits {
-            position: absolute;
-            bottom: -100%;
-            text-align: center;
-            width: 100%;
-            animation: scrollUp 25s linear forwards; /* 曲に合わせて少しゆっくりに */
-        }
-        .credits h2 { font-size: 24px; margin-top: 50px; color: #888; }
-        .credits p { font-size: 32px; margin: 10px 0; font-weight: bold; }
-        .credits .profile-section { margin-top: 100px; border-top: 1px solid #333; padding-top: 50px; }
-        .credits .profile-item { font-size: 20px; margin: 15px 0; font-weight: normal; }
-        .credits .message { margin-top: 40px; font-size: 18px; line-height: 1.6; }
-        .credits .special-thanks { margin-top: 40px; font-size: 14px; color: #aaa; }
-        .credits .the-end { margin-top: 60px; font-size: 28px; font-weight: bold; letter-spacing: 3px; }
-        
-        @keyframes scrollUp {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(-300%); }
-        }
-    </style>
-</head>
-<body>
-
-    <!-- 音声ファイルの読み込み -->
-    <audio id="audio-intro" src="intro.mp3" loop></audio>
-    <audio id="audio-idiot" src="idiot.mp3" loop></audio>
-    <audio id="audio-endroll" src="endroll.mp3"></audio>
-
-    <!-- Scene 1: デカデカ自己紹介 -->
-    <div id="scene-intro">
-        <h1>自己紹介</h1>
-        <button id="start-btn">ここをクリック</button>
-        <!-- 注意書き：ブラウザの仕様対策 -->
-        <p style="font-size: 12px; color: #666; margin-top: 10px;">※音量にご注意ください。画面を一度タップすると環境音が流れます。</p>
-    </div>
-
-    <!-- Scene 2: You are an idiot パロディ -->
-    <div id="idiot-container" class="hidden">
-        <div class="idiot-box">You are an idiot ☺</div>
-    </div>
-
-    <!-- Scene 3: CAPTCHA -->
-    <div id="scene-captcha" class="hidden">
-        <div class="captcha-modal">
-            <div class="captcha-header">
-                すべての <strong><span id="target-word">信号機</span></strong> の画像を選択してください。<br>
-                <small>（<span id="solve-count">0</span> / 5 問クリア）</small>
-            </div>
-            <div class="captcha-grid" id="grid">
-                <!-- 9つのマスをJSで生成 -->
-            </div>
-            <button id="verify-btn">確認</button>
-            <div style="clear:both;"></div>
-        </div>
-    </div>
-
-    <!-- Scene 4: エンドロール -->
-    <div id="scene-endroll" class="hidden">
-        <div class="credits">
-            <h2>Directed by</h2>
-            <p>西原騎宇</p>
-
-            <h2>Produced by</h2>
-            <p>西原騎宇</p>
-
-            <h2>Special Thanks</h2>
-            <p>The Internet</p>
-
-            <div class="profile-section">
-                <h2>【 本当の自己紹介 】</h2>
-                <p>西原騎宇</p>
-                <div class="profile-item">法学部法学科</div>
-                <div class="profile-item"><strong>出身：</strong> 高槻</div>
-                <div class="profile-item"><strong>好きなもの：</strong> ヨルシカ、ソシャゲなど</div>
-                <div class="profile-item"><strong>悩み：</strong> 食事に安易にラーメンを選ぶ風潮</div>
-                
-                <div class="message">
-                    僕の勝手な一人遊びに付き合っていただきありがとうございました。<br>
-                    ゆるりとよろしくお願いします。
-                </div>
-                
-                <div class="special-thanks">
-                    special thanks : Gemini Pro
-                </div>
-                
-                <div class="the-end">
-                    自己紹介以上
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const audioIntro = document.getElementById('audio-intro');
-        const audioIdiot = document.getElementById('audio-idiot');
-        const audioEndroll = document.getElementById('audio-endroll');
-        
-        // 音量調整（必要に応じて数値を0.0〜1.0で変更してください）
-        audioIntro.volume = 0.5;
-        audioIdiot.volume = 0.5;
-        audioEndroll.volume = 0.4;
-
-        // ブラウザの仕様（Autoplay制限）により、ユーザーが画面に触れるまで音が出せません。
-        // 画面のどこかをタップ/クリックした瞬間に最初の環境音を再生します。
-        let isIntroPlaying = false;
-        document.body.addEventListener('click', () => {
-            if (!isIntroPlaying && !sceneIntro.classList.contains('hidden')) {
-                audioIntro.play().catch(() => {});
-                isIntroPlaying = true;
-            }
-        }, { once: true });
-
-        // CAPTCHA用のお題リスト
-        const captchaWords = ["信号機", "横断歩道", "消火栓", "自転車", "バス"];
-        let captchaProgress = 0;
-
-        const sceneIntro = document.getElementById('scene-intro');
-        const idiotContainer = document.getElementById('idiot-container');
-        const sceneCaptcha = document.getElementById('scene-captcha');
-        const sceneEndroll = document.getElementById('scene-endroll');
-        const body = document.body;
-
-        // Scene 1 -> Scene 2 (Idiot) -> Scene 3 (CAPTCHA)
-        document.getElementById('start-btn').addEventListener('click', () => {
-            // Introを隠す
-            sceneIntro.classList.add('hidden');
-            
-            // 音声の切り替え（住宅街ストップ、宇宙基地スタート）
-            audioIntro.pause();
-            audioIdiot.play();
-            
-            // 背景点滅とIdiotボックス表示
-            body.classList.add('flash-bg');
-            idiotContainer.classList.remove('hidden');
-
-            // 4秒間パロディを見せつけた後、CAPTCHAを強制表示
-            setTimeout(() => {
-                body.classList.remove('flash-bg');
-                idiotContainer.classList.add('hidden');
-                sceneCaptcha.classList.remove('hidden');
-                
-                // CAPTCHA中は宇宙基地の音を止める（静寂でイライラ感を演出）
-                audioIdiot.pause();
-                
-                initCaptcha();
-            }, 4000);
-        });
-
-        // CAPTCHAのマスを生成
-        const grid = document.getElementById('grid');
-        for(let i=0; i<9; i++){
-            let box = document.createElement('div');
-            box.className = 'captcha-box';
-            box.addEventListener('click', function(){
-                this.classList.toggle('selected');
-            });
-            grid.appendChild(box);
-        }
-
-        // CAPTCHAの確認ボタン処理
-        document.getElementById('verify-btn').addEventListener('click', () => {
-            captchaProgress++;
-            if(captchaProgress >= 5) {
-                // 5問クリアでエンドロールへ
-                sceneCaptcha.classList.add('hidden');
-                sceneEndroll.classList.remove('hidden');
-                
-                // 魔王魂の曲をスタート
-                audioEndroll.currentTime = 0;
-                audioEndroll.play();
-            } else {
-                // 次の問題へ
-                initCaptcha();
-            }
-        });
-
-        // CAPTCHAを初期化・更新する関数
         function initCaptcha() {
             document.getElementById('target-word').innerText = captchaWords[captchaProgress];
             document.getElementById('solve-count').innerText = captchaProgress;
